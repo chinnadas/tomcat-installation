@@ -1,0 +1,114 @@
+tomcat8 installation in ubuntu 18.04
+===================================
+
+https://linuxize.com/post/how-to-install-tomcat-8-5-on-ubuntu-18.04/
+
+sudo useradd -m -U -d /opt/tomcat -s /bin/false tomcat
+sudo apt install unzip wget
+sudo apt install unzip wget
+http://mirrors.estointernet.in/apache/tomcat/tomcat-8/v8.5.43/bin/apache-tomcat-8.5.43.tar.gz ##(tomcat,Core,tar.gz)
+tar -xzvf apache-tomcat-*
+mkdir -p /opt/tomcat
+sudo  mv apache-tomcat-8.5.43 /opt/tomcat/
+sudo ln -s /opt/tomcat/apache-tomcat-8.5.43 /opt/tomcat/latest
+sudo chown -R tomcat: /opt/tomcat
+sudo sh -c 'chmod +x /opt/tomcat/latest/bin/*.sh'
+
+=================================================
+# Create a systemd unit file
+
+# To run Tomcat as a service we will create a new tomcat.service unit file in the /etc/systemd/system/ directory with the following contents:
+
+vi /etc/systemd/system/tomcat.service
+
+
+[Unit]
+Description=Tomcat 8.5 servlet container
+After=network.target
+
+[Service]
+Type=forking
+
+User=tomcat
+Group=tomcat
+
+Environment="JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64"
+Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom"
+
+Environment="CATALINA_BASE=/opt/tomcat/latest"
+Environment="CATALINA_HOME=/opt/tomcat/latest"
+Environment="CATALINA_PID=/opt/tomcat/latest/temp/tomcat.pid"
+Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+
+ExecStart=/opt/tomcat/latest/bin/startup.sh
+ExecStop=/opt/tomcat/latest/bin/shutdown.sh
+
+[Install]
+WantedBy=multi-user.target
+
+========================================================================
+
+sudo systemctl daemon-reload
+sudo systemctl start tomcat
+sudo systemctl status tomcat
+sudo systemctl enable tomcat
+
+
+tomcat port-change-configuration 
+================================
+
+
+vi /opt/tomcat/apache-tomcat-8.5.43/conf/server.xml
+
+# before change the port
+  ====================
+        <Connector port="8080" protocol="HTTP/1.1" 
+           connectionTimeout="20000" 
+           redirectPort="8443" />
+
+# after change the port number to 9090
+  =====================================
+     <Connector port="9090" protocol="HTTP/1.1" 
+           connectionTimeout="20000" 
+           redirectPort="8443" />
+
+
+sudo systemctl start tomcat
+sudo systemctl status tomcat
+sudo systemctl enable tomcat
+
+sudo vim /opt/tomcat/latest/conf/tomcat-users.xml
+
+<tomcat-users>
+<!--
+    Comments
+-->
+   <role rolename="admin-gui"/>
+   <role rolename="manager-gui"/>
+   <user username="admin" password="admin_password" roles="admin-gui,manager-gui"/>
+</tomcat-users>
+
+
+vi /opt/tomcat/latest/webapps/manager/META-INF/context.xml
+
+<--
+<Context antiResourceLocking="false" privileged="true" >
+<!--
+  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+         allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" />
+-->
+</Context>
+
+
+
+vi /opt/tomcat/latest/webapps/host-manager/META-INF/context.xml
+
+<--
+<Context antiResourceLocking="false" privileged="true" >
+<!--
+  <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+         allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" />
+-->
+</Context>
+
+sudo systemctl restart tomcat
